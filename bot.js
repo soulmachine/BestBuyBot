@@ -36,6 +36,10 @@ var chromeOptions = {
   defaultViewport: null,
 };
 
+async function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function authorizeGmail() {
   if (fs.existsSync(TOKEN_FILE)) {
     console.log(TOKEN_FILE + " already exists");
@@ -122,21 +126,6 @@ async function readVerificationCode() {
   }
 }
 
-async function checkStatus(itemUrl, interval) {
-  openPage(itemUrl)
-    .catch((error) => {
-      console.log(error);
-    })
-    .then((success) => {
-      if (success) {
-        console.log("Succeeded");
-      } else {
-        console.log("Sleeping...");
-        setTimeout(() => checkStatus(itemUrl, interval), interval);
-      }
-    });
-}
-
 async function openPage(itemUrl) {
   console.log(new Date(), itemUrl);
   const browser = await pptr.connect(chromeOptions);
@@ -207,8 +196,22 @@ async function openPage(itemUrl) {
   await authorizeGmail();
 
   const interval = 30000; // 30 seconds
-  // URL_TEST, URL_RTX_3090
-  await checkStatus(URL_RTX_3090, interval);
+
+  let success = false;
+  while (!success) {
+    try {
+      // URL_TEST, URL_RTX_3090
+      success = await openPage(URL_RTX_3090);
+    } catch (e) {
+      console.log(e);
+    }
+
+    if (!success) {
+      console.log("Sleeping...");
+      await sleep(interval);
+    }
+  }
+  console.log("Succeeded");
 })().catch((e) => {
   console.log(e);
 });
